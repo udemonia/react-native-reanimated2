@@ -7,6 +7,7 @@ import Animated, {
   useAnimatedStyle,
   Easing,
   withSpring,
+  withRepeat,
 } from 'react-native-reanimated';
 
 //* Taken from the below video series
@@ -18,7 +19,7 @@ export default function App() {
 
   //* use shared value - create a value that can be handled from the ui thread
   const progress = useSharedValue(1)
-  const scale = useSharedValue(1)
+  const scale = useSharedValue(2)
 
   //* use animated style - similar to the stylesheet styles
   // https://docs.swmansion.com/react-native-reanimated/docs/api/useAnimatedStyle/
@@ -28,7 +29,7 @@ export default function App() {
     return {
       opacity: progress.value,
       borderRadius: (progress.value * SIZE) / 2,
-      transform: [{ scale: scale.value }]
+      transform: [{ scale: scale.value }, {rotate: `${ progress.value * 2 * Math.PI}rad`}]
 
     }
   }, []) 
@@ -36,8 +37,8 @@ export default function App() {
   useEffect(() => {
 
     //* withTiming to value + clock??
-    progress.value = withSpring(0.5)
-    scale.value = withSpring(1)
+    progress.value = withRepeat(withSpring(0.5), 3, true)
+    scale.value = withRepeat(withSpring(1), 3, true)
 
   }, [])
 
