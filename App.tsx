@@ -21,6 +21,11 @@ export default function App() {
   const progress = useSharedValue(1)
   const scale = useSharedValue(2)
 
+  const handleRotation = (progress : Animated.SharedValue<number>) => {
+    'worklet';
+    return `${progress.value * 2 * Math.PI}rad`
+  }
+
   //* use animated style - similar to the stylesheet styles
   // https://docs.swmansion.com/react-native-reanimated/docs/api/useAnimatedStyle/
   // second argument is an empty array
@@ -29,7 +34,7 @@ export default function App() {
     return {
       opacity: progress.value,
       borderRadius: (progress.value * SIZE) / 2,
-      transform: [{ scale: scale.value }, {rotate: `${ progress.value * 2 * Math.PI}rad`}]
+      transform: [{ scale: scale.value }, {rotate: handleRotation(progress)}]
 
     }
   }, []) 
@@ -37,7 +42,7 @@ export default function App() {
   useEffect(() => {
 
     //* withTiming to value + clock??
-    progress.value = withRepeat(withSpring(0.5), 3, true)
+    progress.value = withRepeat(withSpring(0.5), 5, true)
     scale.value = withRepeat(withSpring(1), 3, true)
 
   }, [])
@@ -48,8 +53,6 @@ export default function App() {
         {height: SIZE, width: SIZE, backgroundColor: 'blue'}, 
         reanimatedStyle 
       ]}/>
-
-
     </View>
   );
 }
