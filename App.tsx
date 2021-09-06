@@ -10,116 +10,49 @@ import Animated, {
   withSpring,
   withRepeat,
   useAnimatedGestureHandler,
+  useAnimatedScrollHandler,
 } from 'react-native-reanimated';
 import LearningSession1 from './src/LearningAnimation1';
+import SquareBounceRadius from './src/squareBounceRadius';
+import { Page } from './components/Page';
 
-//* Taken from the below video series
-// https://www.youtube.com/watch?v=yz9E10Dq8Bg&list=PLjHsmVtnAr9TWoMAh-3QMiP7bPUqPFuFZ
+const words= ['It\'s', 'Brandon\'s', 'Animation!!!', '🥳']
 
-//? PanGestures
-//https://www.youtube.com/watch?v=4HUreYYoE6U&list=PLjHsmVtnAr9TWoMAh-3QMiP7bPUqPFuFZ&index=2
-
-const SIZE = 100.0
-const CIRCLE_RADIUS = SIZE * 2
-
-type ContextType = {
-  translateX : number,
-  translateY : number
-}
 
 export default function App() {
 
-  const translateX = useSharedValue(0);
-  const translateY = useSharedValue(0);
+  const translateX = useSharedValue(0)
 
-  const panGestureEvent = useAnimatedGestureHandler<PanGestureHandlerGestureEvent, ContextType >({
-    onStart: (event, context) => {
-      context.translateX = translateX.value
-      context.translateY = translateY.value
-    },
-    onActive: (event, context) => {
+  const scrollHandler = useAnimatedScrollHandler((event) => {
+    translateX.value = event.contentOffset.x
 
-      //* get the translate x value - stored in Context
-      //* we need translation to be a shared value -> and update it as onActive is active
-      //* We will bind translationX with the event.translationX value :)
-      translateX.value = event.translationX + context.translateX
-      translateY.value = event.translationY + context.translateY
-      // translateX.value = event.translationX
-      // console.log(event.translationX)
-    },
-    onEnd: () => {
-      const distance = Math.sqrt( translateY.value ** 2 + translateX.value ** 2)
-
-      if ( distance < CIRCLE_RADIUS + SIZE / 2) {
-        //* when we release, we need to set translate x and y back to 0
-        translateX.value = withSpring(0);
-        translateY.value = withSpring(0);
-      }
-
-
-
-    }
+    //* access the amount of scroll -> 
+    console.log(translateX.value)
   })
 
-  //* we need to create a animated style and transform our X with translate x value
-  const rStyle = useAnimatedStyle(() => {
+  return (
+      <Animated.ScrollView 
+        pagingEnabled
+        scrollEventThrottle={16} //! 16 allows for a 60fps animation
+        horizontal={true} 
+        onScroll={scrollHandler}
+        style={styles.container}>
+        {words.map((title, index) => {
+          return <Page 
+                  key={index.toString()} 
+                  title={title}
+                  translateX={translateX} 
+                  index={index}/>
+        })}
 
-    return {
-      transform: [
-        {
-          translateX: translateX.value
-        },
-        {
-          translateY: translateY.value
-        }
-      ]
-    }
-  })
+      </Animated.ScrollView>
 
-return (
-    <View style={styles.container}>
-      <PanGestureHandler onGestureEvent={panGestureEvent} >
-        <Animated.View style={styles.circle}>
-          <Animated.View 
-            style={ [styles.square, rStyle ]}
-          />
-        </Animated.View>
-      </PanGestureHandler>
-    </View>
-
-)
+  )
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#fff',
+    backgroundColor: '#fff'
   },
-  square: {
-    width: SIZE,
-    height: SIZE,
-    backgroundColor: 'rgba(0,0,256, 0.5)',
-    borderRadius: 20,
-    shadowColor: "#000",
-    shadowOffset: {
-	    width: 0,
-	    height: 2,
-    },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-
-elevation: 5,
-  },
-  circle: {
-    borderWidth: 5,
-    borderColor: 'rgba(0,0,256, 0.5)',
-    height: CIRCLE_RADIUS * 2,
-    width: CIRCLE_RADIUS * 2,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: CIRCLE_RADIUS
-
-  }
 });
