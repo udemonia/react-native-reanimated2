@@ -1,6 +1,7 @@
 import { StatusBar } from 'expo-status-bar';
-import React, { Component, useEffect, useState } from 'react';
+import React, { Component, Context, useEffect, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
+import { PanGestureHandler, PanGestureHandlerGestureEvent } from 'react-native-gesture-handler';
 import Animated, {
   useSharedValue,
   withTiming,
@@ -8,53 +9,85 @@ import Animated, {
   Easing,
   withSpring,
   withRepeat,
+  useAnimatedGestureHandler,
 } from 'react-native-reanimated';
+import LearningSession1 from './src/LearningAnimation1';
 
 //* Taken from the below video series
 // https://www.youtube.com/watch?v=yz9E10Dq8Bg&list=PLjHsmVtnAr9TWoMAh-3QMiP7bPUqPFuFZ
 
-const SIZE = 100
+//? PanGestures
+//https://www.youtube.com/watch?v=4HUreYYoE6U&list=PLjHsmVtnAr9TWoMAh-3QMiP7bPUqPFuFZ&index=2
+
+const SIZE = 100.0
+const CIRCLE_RADIUS = SIZE * 2
+
+type ContextType = {
+  translateX : number,
+  translateY : number
+}
 
 export default function App() {
 
-  //* use shared value - create a value that can be handled from the ui thread
-  const progress = useSharedValue(1)
-  const scale = useSharedValue(2)
+  const translateX = useSharedValue(0);
+  const translateY = useSharedValue(0);
 
-  const handleRotation = (progress : Animated.SharedValue<number>) => {
-    'worklet';
-    return `${progress.value * 2 * Math.PI}rad`
-  }
+  const panGestureEvent = useAnimatedGestureHandler<PanGestureHandlerGestureEvent, ContextType >({
+    onStart: (event, context) => {
+      context.translateX = translateX.value
+      context.translateY = translateY.value
+    },
+    onActive: (event, context) => {
 
-  //* use animated style - similar to the stylesheet styles
-  // https://docs.swmansion.com/react-native-reanimated/docs/api/useAnimatedStyle/
-  // second argument is an empty array
-  //
-  const reanimatedStyle = useAnimatedStyle(() => {
-    return {
-      opacity: progress.value,
-      borderRadius: (progress.value * SIZE) / 2,
-      transform: [{ scale: scale.value }, {rotate: handleRotation(progress)}]
+      //* get the translate x value - stored in Context
+      //* we need translation to be a shared value -> and update it as onActive is active
+      //* We will bind translationX with the event.translationX value :)
+      translateX.value = event.translationX + context.translateX
+      translateY.value = event.translationY + context.translateY
+      // translateX.value = event.translationX
+      // console.log(event.translationX)
+    },
+    onEnd: () => {
+      const distance = Math.sqrt( translateY.value ** 2 + translateX.value ** 2)
+
+      if ( distance < CIRCLE_RADIUS + SIZE / 2) {
+        //* when we release, we need to set translate x and y back to 0
+        translateX.value = withSpring(0);
+        translateY.value = withSpring(0);
+      }
+
+
 
     }
-  }, []) 
+  })
 
-  useEffect(() => {
+  //* we need to create a animated style and transform our X with translate x value
+  const rStyle = useAnimatedStyle(() => {
 
-    //* withTiming to value + clock??
-    progress.value = withRepeat(withSpring(0.5), 5, true)
-    scale.value = withRepeat(withSpring(1), 3, true)
+    return {
+      transform: [
+        {
+          translateX: translateX.value
+        },
+        {
+          translateY: translateY.value
+        }
+      ]
+    }
+  })
 
-  }, [])
-
-  return (
+return (
     <View style={styles.container}>
-      <Animated.View style={[
-        {height: SIZE, width: SIZE, backgroundColor: 'blue'}, 
-        reanimatedStyle 
-      ]}/>
+      <PanGestureHandler onGestureEvent={panGestureEvent} >
+        <Animated.View style={styles.circle}>
+          <Animated.View 
+            style={ [styles.square, rStyle ]}
+          />
+        </Animated.View>
+      </PanGestureHandler>
     </View>
-  );
+
+)
 }
 
 const styles = StyleSheet.create({
@@ -63,6 +96,30 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: '#fff',
-
   },
+  square: {
+    width: SIZE,
+    height: SIZE,
+    backgroundColor: 'rgba(0,0,256, 0.5)',
+    borderRadius: 20,
+    shadowColor: "#000",
+    shadowOffset: {
+	    width: 0,
+	    height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+
+elevation: 5,
+  },
+  circle: {
+    borderWidth: 5,
+    borderColor: 'rgba(0,0,256, 0.5)',
+    height: CIRCLE_RADIUS * 2,
+    width: CIRCLE_RADIUS * 2,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: CIRCLE_RADIUS
+
+  }
 });
